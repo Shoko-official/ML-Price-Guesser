@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <fstream>
 
-
 std::vector<Data> Parser::parse(const std::string &filePath) {
   std::vector<Data> records;
   std::ifstream file(filePath);
@@ -17,6 +16,13 @@ std::vector<Data> Parser::parse(const std::string &filePath) {
     try {
       Data d;
       d.propertyValue = parseDouble(txt[10]);
+
+      // Drop obvious outliers before doing anything else.
+      // Transactions below 10k seem symbolic (e.g.donations, family
+      // transfers).
+      // Above 2M we have too few samples and too much variance.
+      if (d.propertyValue < 10000.0 || d.propertyValue > 2000000.0)
+        continue;
 
       d.month = std::stoi(txt[8].substr(3, 2));
       d.year = std::stoi(txt[8].substr(6, 4));
@@ -37,6 +43,12 @@ std::vector<Data> Parser::parse(const std::string &filePath) {
         if (!txt[idx].empty())
           d.totalCarrezArea += parseDouble(txt[idx]);
       }
+
+      // Skip built properties that have no usable surface area at all.
+      // They would just add noise, the model can't learn anything from them.
+      if (d.localTypeCode > 0 && d.totalCarrezArea == 0.0 &&
+          d.realBuiltArea == 0.0)
+        continue;
 
       d.landArea = txt[42].empty() ? 0.0 : parseDouble(txt[42]);
       d.landType = txt[40];
