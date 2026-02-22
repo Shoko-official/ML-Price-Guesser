@@ -11,7 +11,7 @@ int LabelEncode::encode(const std::string &label) {
   return iteration->second;
 }
 
-int LabelEncode::size() const { return mapping.size(); }
+int LabelEncode::size() const { return static_cast<int>(mapping.size()); }
 
 void LabelEncode::reset() {
   mapping.clear();
