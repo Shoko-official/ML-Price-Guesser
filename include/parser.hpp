@@ -67,12 +67,15 @@ public:
 
   struct RollingPrices {
     std::unordered_map<std::string, double> sectionPrices;
+    std::unordered_map<std::string, double> sectionPrices6m;
     std::unordered_map<std::string, double> buildingPrices;
+    std::unordered_map<std::string, double> typeSectionPrices;
+    std::unordered_map<std::string, double> cityPrices;
+    std::unordered_map<std::string, std::vector<std::pair<int, double>>>
+        exactSaleHistory;
     size_t size() const { return sectionPrices.size(); }
   };
 
-  // Rolling section/building price: for each transaction, the mean price/m2
-  // over the previous 18 months.
   RollingPrices computeRollingPrices(const std::vector<std::string> &filePaths,
                                      int windowMonths = 18);
 
