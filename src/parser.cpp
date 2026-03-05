@@ -332,10 +332,6 @@ Parser::computeRollingPrices(const std::vector<std::string> &filePaths,
     }
   }
 
-  // Build temporal price histories per key and look up rolling averages.
-  // KEY FIX: rolling prices are now indexed by (key + "_" + timeIndex) so
-  // the lookup in parse() can directly hit the right bucket without needing
-  // an exact txKey match.
   auto buildHistory = [&](auto getKey) {
     std::unordered_map<std::string, std::vector<std::pair<int, double>>> hist;
     for (const auto &s : sales) {
@@ -346,22 +342,18 @@ Parser::computeRollingPrices(const std::vector<std::string> &filePaths,
     return hist;
   };
 
-  // Store rolling avg for key at a given timeIndex over the past windowMonths,
-  // keyed as "baseKey_TIMEINDEX" so parse() can look up directly.
   auto computeIndexedMap =
       [&](const std::unordered_map<std::string,
                                    std::vector<std::pair<int, double>>> &hist,
           int window) {
         std::unordered_map<std::string, double> res;
-        // Collect all unique timeIndexes per key
         for (const auto &entry : hist) {
           const auto &vec = entry.second;
           for (const auto &pt : vec) {
             int ti = pt.first;
             std::string lookupKey = entry.first + "_" + std::to_string(ti);
             if (res.count(lookupKey))
-              continue; // already computed for this key+time
-            // Average over [ti-window, ti)
+              continue;
             auto lo = std::lower_bound(vec.begin(), vec.end(),
                                        std::make_pair(ti - window, -1e18));
             auto hi = std::lower_bound(vec.begin(), vec.end(),
@@ -391,7 +383,7 @@ Parser::computeRollingPrices(const std::vector<std::string> &filePaths,
   rp.buildingPrices = computeIndexedMap(buildHist, 18);
   rp.typeSectionPrices = computeIndexedMap(typeHist, 18);
   rp.cityPrices = computeIndexedMap(cityHist, 18);
-  rp.exactSaleHistory = std::move(exactHist); // On garde tout l'historique brut
+  rp.exactSaleHistory = std::move(exactHist);
   return rp;
 }
 
