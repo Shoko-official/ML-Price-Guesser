@@ -1,41 +1,42 @@
 #pragma once
 #include "encoder.hpp"
+#include "tree.hpp"
 #include <vector>
 
-// Weight initialization strategy.
-// Xavier is generally safer when the number of features is large.
-enum class WeightInit { Zero, Xavier };
-
-// Linear regression trained with batch gradient descent.
-// I added L2 (ridge) regularization because without it the model tends to
-// blow up on highly correlated geographic features... (dept and city codes)
-
-class LinearRegression {
+// Gradient boosted decision trees, trained from scratch.
+// Each round fits a shallow tree on the residuals of the current ensemble,
+// then adds it with a shrinkage factor to slow down learning and reduce
+// overfitting.
+class GBDT {
 public:
-  LinearRegression(double lr = 0.01, int epochs = 500, double lambda = 0.001,
-                   WeightInit init = WeightInit::Xavier,
-                   unsigned int seed = 42);
+  GBDT(int numTrees = 100, double learningRate = 0.1, int maxDepth = 4,
+       int minSamplesSplit = 10, double subsampleRatio = 0.5,
+       double lambda = 1.0);
 
-  // Train the model on a set of already-encoded and normalized samples.
-  void train(const std::vector<EncodeData> &data);
+  void fit(const std::vector<EncodeData> &trainData,
+           const std::vector<EncodeData> &valData = {}, int patience = 30);
 
-  // Predict a single price given a feature vector.
   double predict(const std::vector<double> &feats) const;
 
-  // Compute RMSE on a held-out test set : useful to track progress.
   double rmse(const std::vector<EncodeData> &testData) const;
 
-  // Access trained weights if needed (e.g. for inspection / saving).
-  const std::vector<double> &getWeights() const { return weights; }
-  double getBias() const { return bias; }
+  void save(const std::string &path) const;
+  void load(const std::string &path);
 
 private:
-  double learningRate;
-  int epochs;
-  double lambda; // L2 regularization strength
-  WeightInit initStrategy;
-  unsigned int seed;
+  std::vector<std::vector<double>>
+  computeBinThresholds(const std::vector<EncodeData> &data, int maxBins = 256);
+  std::vector<uint8_t>
+  binFeatures(const std::vector<EncodeData> &data,
+              const std::vector<std::vector<double>> &thresholds);
 
-  std::vector<double> weights;
-  double bias;
+  int numTrees;
+  double learningRate;
+  int maxDepth;
+  int minSamplesSplit;
+  double subsampleRatio;
+  double lambda;
+  double basePrediction;
+  std::vector<std::vector<double>> binThresholds;
+  std::vector<DecisionTree> trees;
 };
