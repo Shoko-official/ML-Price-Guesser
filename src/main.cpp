@@ -1,6 +1,7 @@
 #include "../include/encoder.hpp"
 #include "../include/model.hpp"
 #include "../include/parser.hpp"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <string>
