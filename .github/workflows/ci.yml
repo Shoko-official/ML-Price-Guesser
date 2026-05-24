@@ -1,0 +1,23 @@
+name: ML Price Guesser CI
+
+on:
+  push:
+    branches: [GBDT, main, master]
+  pull_request:
+    branches: [GBDT, main, master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j2
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
